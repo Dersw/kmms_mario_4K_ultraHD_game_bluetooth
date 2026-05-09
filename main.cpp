@@ -11,11 +11,13 @@ typedef struct SObject {
     float x, y;
     float width, height;
     float vertSpeed;
+    bool isFly;
 } TObject;
 
 char map[mapHeight][mapWidth + 1];
 TObject mario;
-TObject brick[1];
+TObject *brick = nullptr;
+int brickLength;
 
 void ClearMap() {
     for (int i = 0; i < mapWidth; i++) {
@@ -47,11 +49,13 @@ void InitObject(TObject *obj, float xPos, float yPos, float oWidth, float oHeigh
 }
 
 void VertMoveObject(TObject *obj) {
+    (*obj).isFly = true;
     (*obj).vertSpeed += 0.05;
     SetObjectPos(obj, (*obj).x, (*obj).y + (*obj).vertSpeed);
     if (IsCollision(*obj, brick[0])) {
         (*obj).y -= (*obj).vertSpeed;
         (*obj).vertSpeed = 0;
+        (*obj).isFly = false;
     }
 }
 
@@ -81,18 +85,43 @@ void setCur(int x, int y) {
     SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), coord);
 }
 
+void HorizonMoveMap(float dx) {
+    brick[0].x += dx;
+}
+
 bool IsCollision(TObject o1, TObject o2) {
     return ((o1.x + o1.width) > o2.x) && (o1.x < (o2.x + o2.width)) &&
            ((o1.y + o1.height) > o2.y) && (o1.y < (o2.y + o2.height))
 }
 
+void CreateLevel() {
+    InitObject(&mario, 39, 10, 3, 3);
+
+    brickLength = 5;
+    brick = malloc(sizeof(*brick) * brickLength);
+    InitObject(brick+0, 20, 20, 40, 5);
+    InitObject(brick+1, 60, 15, 10, 10);
+    InitObject(brick+2, 80, 20, 20, 5);
+    InitObject(brick+3, 120, 15, 10, 10);
+    InitObject(brick+4, 150, 20, 40, 5);
+}
+
 int main() {
 
-    InitObject(&mario, 39, 10, 3, 3);
-    InitObject(brick, 20, 20, 40, 5);
+    CreateLevel();
 
     do {
         ClearMap();
+
+        if ((mario.isFly == false) && (GetKeyState(VK_SPACE) < 0)) {
+            mario.vertSpeed = -0.7;
+        }
+        if (GetKeyState('A') < 0) {
+            HorizonMoveMap(1);
+        }
+        if (GetKeyState('D') < 0) {
+            HorizonMoveMap(-1);
+        }
 
         VertMoveObject(&mario);
         PutObjectOnMap(brick[0]);
